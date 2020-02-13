@@ -28,3 +28,4 @@ Features I am planning on
 * [Wavelib](https://github.com/zhehangd/wavelib) (forked, with improved CMake build system)
 * CLI11
 * glog
+* fmt

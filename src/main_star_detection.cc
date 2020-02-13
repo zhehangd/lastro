@@ -1,4 +1,4 @@
-#include "main_starmask.h"
+#include "main_star_detection.h"
 
 #include <memory>
 
@@ -6,12 +6,12 @@
 #include <opencv2/opencv.hpp>
 
 #include "common.h"
-#include "star_detection_and_matching.h"
+#include "star_detection.h"
 
 namespace lastro {
-namespace starmask {
+namespace {
 
-struct Config {
+struct MakeStarMask {
   
   // Input expsoure image
   std::string exposure_image_file;
@@ -31,7 +31,7 @@ struct Config {
   double offset = 0;
 };
 
-void MainStarMask(const Config &cfg) {
+void MakeStarMaskMain(const MakeStarMask &cfg) {
   
   std::string filename = cfg.exposure_image_file;
   LOG(INFO) << "Reading exposure image " << filename;
@@ -61,9 +61,67 @@ void MainStarMask(const Config &cfg) {
   LOG(INFO) << "Saving image to " << out_filename;
   cv::imwrite(out_filename, image);
 }
+
+
+struct MakeStarListConfig {
   
-void RegisterSubcommand(CLI::App &main_app) {
-  auto cfg = std::make_shared<Config>();
+  // Input expsoure image
+  std::string exposure_image_file;
+  
+  // Output mask/raw image
+  std::string mask_image_file;
+  
+  // Output mask/raw image
+  std::string star_list_file;
+};
+
+void MakeStarListMain(const MakeStarListConfig &cfg) {
+  
+  std::string image_filename = cfg.exposure_image_file;
+  cv::Mat image = cv::imread(image_filename, cv::IMREAD_UNCHANGED);
+  CHECK(image.data != nullptr);
+  cv::Mat mask = cv::imread(cfg.mask_image_file, cv::IMREAD_GRAYSCALE);
+  CHECK(mask.data != nullptr);
+  
+  if (image.channels() > 1) {
+    cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+  }
+  
+  StarList star_index;
+  DetectStarsFromMask(image, mask, &star_index);
+  
+  std::string out_filename;
+  if (!cfg.star_list_file.empty()) {
+    out_filename = cfg.star_list_file;
+  } else {
+    out_filename = GenerateFilename(image_filename, ".", "_starlist.txt");
+  }
+  
+  SaveStarList(out_filename, star_index);
+}
+ 
+void RegisterMakeStarList(CLI::App &main_app) {
+  auto cfg = std::make_shared<MakeStarListConfig>();
+  CLI::App &app = *main_app.add_subcommand("starlist");
+  
+  app.add_option("EXPOSURE", cfg->exposure_image_file,
+    "Exposure image for star extraction")->required();
+  
+  app.add_option("STARMASK", cfg->mask_image_file,
+    "Mask image for star extraction")->required();
+    
+  app.add_option("-o,--output", cfg->star_list_file,
+    "Output file for the generated star list.");
+  
+  auto callback = [cfg]() {
+    MakeStarListMain(*cfg);
+  };
+  
+  app.parse_complete_callback(callback);
+}
+
+void RegisterMakeStarMask(CLI::App &main_app) {
+  auto cfg = std::make_shared<MakeStarMask>();
   CLI::App &app = *main_app.add_subcommand("starmask");
   
   app.add_option("EXPOSURE", cfg->exposure_image_file,
@@ -84,11 +142,17 @@ void RegisterSubcommand(CLI::App &main_app) {
     "Output file for the generated mask/raw image.");
   
   auto callback = [cfg]() {
-    MainStarMask(*cfg);
+    MakeStarMaskMain(*cfg);
   };
   
   app.parse_complete_callback(callback);
 }
 
+} // namespace {}
+
+void RegisterStarDetectionSubcommands(CLI::App &main_app) {
+  RegisterMakeStarMask(main_app);
+  RegisterMakeStarList(main_app);
 }
+
 }

@@ -7,8 +7,7 @@
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
 
-#include "main_starmask.h"
-#include "main_starlist.h"
+#include "main_star_detection.h"
 
 using namespace lastro;
 
@@ -16,8 +15,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   
   CLI::App app {"Landscape astrophotography tools"};
-  starmask::RegisterSubcommand(app);
-  starlist::RegisterSubcommand(app);
+  RegisterStarDetectionSubcommands(app);
   
   try {
     app.parse(argc, argv);
