@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.12)
 
 project(lastro VERSION 1.0.0 LANGUAGES CXX)
 
@@ -25,6 +25,8 @@ find_package(OpenCV REQUIRED)
 find_package(wavelib REQUIRED)
 find_package(fmt REQUIRED)
 find_package(CLI11 REQUIRED)
+find_package(GTest)
 
 add_subdirectory(src)
+add_subdirectory(test)
 

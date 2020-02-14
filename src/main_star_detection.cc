@@ -11,7 +11,7 @@
 namespace lastro {
 namespace {
 
-struct MakeStarMask {
+struct MakeStarMaskConfig {
   
   // Input expsoure image
   std::string exposure_image_file;
@@ -31,7 +31,7 @@ struct MakeStarMask {
   double offset = 0;
 };
 
-void MakeStarMaskMain(const MakeStarMask &cfg) {
+void MakeStarMaskMain(const MakeStarMaskConfig &cfg) {
   
   std::string filename = cfg.exposure_image_file;
   LOG(INFO) << "Reading exposure image " << filename;
@@ -99,6 +99,42 @@ void MakeStarListMain(const MakeStarListConfig &cfg) {
   
   SaveStarList(out_filename, star_index);
 }
+
+struct DrawStarListConfig {
+  
+  // Input expsoure image
+  std::string image_file;
+  
+  // Output mask/raw image
+  std::string star_list_file;
+  
+  std::string output_image_file;
+  
+  // Radius of circles around stars
+  double circle_radius;
+};
+
+void DrawStarListMain(const DrawStarListConfig &cfg) {
+  std::string image_filename = cfg.image_file;
+  cv::Mat image = cv::imread(image_filename);
+  CHECK(image.data != nullptr);
+  
+  StarList star_list;
+  LoadStarList(cfg.star_list_file, star_list);
+  
+  for (const auto &star : star_list) {
+    cv::circle(image, {star.x, star.y}, cfg.circle_radius,
+      cv::Scalar(0, 255, 0));
+  }
+  
+  std::string out_filename;
+  if (!cfg.output_image_file.empty()) {
+    out_filename = cfg.output_image_file;
+  } else {
+    out_filename = GenerateFilename(image_filename, ".", "_stars.jpg");
+  }
+  cv::imwrite(out_filename, image);
+}
  
 void RegisterMakeStarList(CLI::App &main_app) {
   auto cfg = std::make_shared<MakeStarListConfig>();
@@ -121,7 +157,7 @@ void RegisterMakeStarList(CLI::App &main_app) {
 }
 
 void RegisterMakeStarMask(CLI::App &main_app) {
-  auto cfg = std::make_shared<MakeStarMask>();
+  auto cfg = std::make_shared<MakeStarMaskConfig>();
   CLI::App &app = *main_app.add_subcommand("starmask");
   
   app.add_option("EXPOSURE", cfg->exposure_image_file,
@@ -148,11 +184,35 @@ void RegisterMakeStarMask(CLI::App &main_app) {
   app.parse_complete_callback(callback);
 }
 
+void RegisterDrawStarList(CLI::App &main_app) {
+  auto cfg = std::make_shared<DrawStarListConfig>();
+  CLI::App &app = *main_app.add_subcommand("drawstarlist");
+  
+  app.add_option("IMAGE", cfg->image_file,
+    "Image to draw")->required();
+    
+  app.add_option("STARLIST", cfg->star_list_file,
+    "Image to draw")->required();
+  
+  app.add_option("-r,--circle-radius", cfg->circle_radius,
+    "Radius of star circles")->default_val(5);
+    
+  app.add_option("-o,--output", cfg->output_image_file,
+    "Output file for the generated image.");
+  
+  auto callback = [cfg]() {
+    DrawStarListMain(*cfg);
+  };
+  
+  app.parse_complete_callback(callback);
+}
+
 } // namespace {}
 
 void RegisterStarDetectionSubcommands(CLI::App &main_app) {
   RegisterMakeStarMask(main_app);
   RegisterMakeStarList(main_app);
+  RegisterDrawStarList(main_app);
 }
 
 }

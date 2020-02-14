@@ -12,7 +12,7 @@ namespace lastro {
 // Basic infomation of a detected star
 struct BasicStar {
   int x, y; // Coordinates in the image
-  double value; // Brightness of the star TODO: rgb?
+  double value = 0; // Brightness of the star TODO: rgb?
 };
 
 typedef std::vector<BasicStar> StarList;
@@ -36,8 +36,11 @@ void LoadStarList(std::string filename, StarList &star_list);
 // To achieve this purpose one can set min_radius to a small nonzero
 // value to exclude the star at exactly the center position.
 void FilterStarsByDistance(
-  int x, int y, const StarList &stars_in, StarList &stars_out,
+  const StarList &stars_in, int x, int y, StarList &stars_out,
   double max_radius, double min_radius = 0);
+
+void FilterStarsByBrightness(
+  const StarList &stars_in, StarList &stars_out, int N);
 
 }
 

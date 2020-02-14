@@ -106,18 +106,44 @@ void LoadStarList(std::string filename, StarList &star_list) {
 }
 
 void FilterStarsByDistance(
-    int x, int y, const StarList &stars_in, StarList &stars_out,
+    const StarList &stars_in, int x, int y, StarList &stars_out,
     double max_radius, double min_radius) {
   double dist2_min = min_radius * min_radius;
   double dist2_max = max_radius * max_radius;
-  stars_out.clear();
-  std::copy_if(stars_in.begin(), stars_in.end(), std::back_inserter(stars_out),
+  StarList selected;
+  if (&stars_in != &stars_out) {selected.swap(stars_out);}
+  selected.clear();
+  std::copy_if(stars_in.begin(), stars_in.end(), std::back_inserter(selected),
     [x, y, dist2_min, dist2_max](const auto &star) {
-      int dx = std::abs(star.x - x);
-      int dy = std::abs(star.y - y);
+      auto dx = star.x - x;
+      auto dy = star.y - y;
       double dist2 = static_cast<double>(dx * dx + dy * dy);
       return dist2 >= dist2_min && dist2 <= dist2_max;
   });
+  selected.swap(stars_out);
+}
+
+void FilterStarsByBrightness(
+    const StarList &stars_in, StarList &stars_out, int N) {
+  std::size_t num = std::min(stars_in.size(), static_cast<std::size_t>(N));
+  if (num == 0) {stars_out.clear(); return;}
+  
+  StarList selected;
+  if (&stars_in != &stars_out) {selected.swap(stars_out);}
+  selected.reserve(num + 1);
+  selected.clear();
+  selected.assign(num, {});
+  for (const auto &star : stars_in) {
+    if (star.value < selected.back().value) {continue;}
+    auto it = std::upper_bound(
+      selected.begin(), selected.end(), star.value,
+      [](auto v, auto &s) {return v > s.value;});
+    if (it != selected.end()) {
+      selected.insert(it, star);
+      selected.pop_back();
+    }
+  }
+  selected.swap(stars_out);
 }
 
 }
