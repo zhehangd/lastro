@@ -1,9 +1,9 @@
 
 add_library(lastro_objs OBJECT
+  core.cc
   dwt2.cc
   star_detection.cc
   star_matching.cc
-  common.cc
 )
 
 target_include_directories(lastro_objs PUBLIC
@@ -22,6 +22,7 @@ add_executable(lastro
   main.cc
   main_star_detection.cc
   main_star_matching.cc
+  utilities.cc
   $<TARGET_OBJECTS:lastro_objs>
 )
 

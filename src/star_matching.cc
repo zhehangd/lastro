@@ -5,7 +5,7 @@
 
 namespace lastro {
 
-Feature GenerateFeature(int x, int y, const StarList &star_list,
+Feature GenerateFeature(Coords pos, const StarList &star_list,
                         double max_radius) {
   auto w = RES_ANGLE;
   auto h = RES_LENGTH;
@@ -27,14 +27,14 @@ Feature GenerateFeature(int x, int y, const StarList &star_list,
     }
   }
 
-  auto A0_x = star_list[max_val_idx].x;
-  auto A0_y = star_list[max_val_idx].y;
-  double A0 = std::atan2(A0_y - y, A0_x - x);
+  auto A0_x = star_list[max_val_idx].pos.x;
+  auto A0_y = star_list[max_val_idx].pos.y;
+  double A0 = std::atan2(A0_y - pos.y, A0_x - pos.x);
   
   Feature feat = {};
   for (const auto &star : star_list) {
-    double dx = star.x - x;
-    double dy = star.y - y;
+    double dx = star.pos.x - pos.x;
+    double dy = star.pos.y - pos.y;
 
     // Angle
     double angle = std::atan2(dy, dx) - A0;
@@ -72,7 +72,7 @@ Feature GenerateFeature(int x, int y, const StarList &star_list,
 void DrawStarPattern(cv::Mat &canvas, int x, int y, const StarList &stars,
                      cv::Scalar color) {
   for (const auto &star : stars) {
-    cv::line(canvas, {x, y}, {star.x, star.y}, color);
+    cv::line(canvas, {x, y}, {star.pos.x, star.pos.y}, color);
   }
 }
 

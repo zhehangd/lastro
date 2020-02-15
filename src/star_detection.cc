@@ -80,7 +80,7 @@ void DetectStarsFromMask(const cv::Mat &image, const cv::Mat &mask,
 void SaveStarList(std::string filename, const StarList &star_list) {
   std::ofstream ofs(filename);
   for (const auto &star : star_list) {
-    ofs << fmt::format("{:5} {:5} {}\n", star.x, star.y, star.value);
+    ofs << fmt::format("{:5} {:5} {}\n", star.pos.x, star.pos.y, star.value);
   }
   ofs.close();
 }
@@ -106,7 +106,7 @@ void LoadStarList(std::string filename, StarList &star_list) {
 }
 
 void FilterStarsByDistance(
-    const StarList &stars_in, int x, int y, StarList &stars_out,
+    const StarList &stars_in, Coords pos, StarList &stars_out,
     double max_radius, double min_radius) {
   double dist2_min = min_radius * min_radius;
   double dist2_max = max_radius * max_radius;
@@ -114,9 +114,9 @@ void FilterStarsByDistance(
   if (&stars_in != &stars_out) {selected.swap(stars_out);}
   selected.clear();
   std::copy_if(stars_in.begin(), stars_in.end(), std::back_inserter(selected),
-    [x, y, dist2_min, dist2_max](const auto &star) {
-      auto dx = star.x - x;
-      auto dy = star.y - y;
+    [pos, dist2_min, dist2_max](const auto &star) {
+      auto dx = star.pos.x - pos.x;
+      auto dy = star.pos.y - pos.y;
       double dist2 = static_cast<double>(dx * dx + dy * dy);
       return dist2 >= dist2_min && dist2 <= dist2_max;
   });

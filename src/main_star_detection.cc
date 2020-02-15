@@ -5,7 +5,7 @@
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
 
-#include "common.h"
+#include "utilities.h"
 #include "star_detection.h"
 
 namespace lastro {
@@ -123,7 +123,7 @@ void DrawStarListMain(const DrawStarListConfig &cfg) {
   LoadStarList(cfg.star_list_file, star_list);
   
   for (const auto &star : star_list) {
-    cv::circle(image, {star.x, star.y}, cfg.circle_radius,
+    cv::circle(image, star.pos.cvPoint(), cfg.circle_radius,
       cv::Scalar(0, 255, 0));
   }
   

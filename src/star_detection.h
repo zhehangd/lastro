@@ -3,6 +3,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "core.h"
+
 // This module focuses on finding stars in a typical astronomy picture.
 // It expects there may be noise, nonuniform background, light pollution,
 // or landscape foreground and tries to reduce their disturbance.
@@ -11,7 +13,9 @@ namespace lastro {
 
 // Basic infomation of a detected star
 struct BasicStar {
-  int x, y; // Coordinates in the image
+  BasicStar(void) {}
+  BasicStar(int x, int y, double val) : pos(x, y), value(val) {}
+  Coords pos; // Coordinates in the image
   double value = 0; // Brightness of the star TODO: rgb?
 };
 
@@ -36,7 +40,7 @@ void LoadStarList(std::string filename, StarList &star_list);
 // To achieve this purpose one can set min_radius to a small nonzero
 // value to exclude the star at exactly the center position.
 void FilterStarsByDistance(
-  const StarList &stars_in, int x, int y, StarList &stars_out,
+  const StarList &stars_in, Coords pos, StarList &stars_out,
   double max_radius, double min_radius = 0);
 
 void FilterStarsByBrightness(
