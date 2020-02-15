@@ -5,6 +5,77 @@
 
 namespace lastro {
 
+double Distance(const Feature &f1, const Feature &f2) {
+  double dist = 0;
+  double sum1 = 0, sum2 = 0;
+  for (auto v : f1) {sum1 += v;}
+  for (auto v : f2) {sum2 += v;}
+  double den = sum1 + sum2;
+  if (den == 0) {return 1;}
+  for (int i = 0; i < RES_TOTAL; ++i) {dist += (double)std::abs(f1[i] - f2[i]);}
+  dist /= sum1 + sum2; // is this reasonable?
+  return dist;
+}
+  
+std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
+                                 const std::vector<Feature> &group2,
+                                 double threshold) {
+  int h = group1.size();
+  int w = group2.size();
+  std::vector<double> dist_lut(w * h);
+  for (int r = 0; r < h; ++r)
+    for (int c = 0; c < w; ++c)
+      dist_lut[r * w + c] = Distance(group1[r], group2[c]);
+  
+  //for (int r = 0; r < h; ++r) {
+  //  auto it = dist_lut.begin() + r * w;
+  //  LOG(INFO) << fmt::format("{:<4.2}", fmt::join(it, it + w, " , "));
+  //}
+  std::vector<int> pool; // elements from group1 that have no match yet
+  for (int r = 0; r < h; ++r) {pool.push_back(r);}
+  std::vector<int> group1_to(h, -1);
+  std::vector<int> group2_to(w, -1);
+  int num_matches = std::min(w, h);
+  int cur_matches = 0;
+  while (num_matches != cur_matches) {
+    // Select one unpaired candidate
+    int r = pool.back();
+    // Find the best unpaired partner 
+    double min_dist = std::numeric_limits<double>::infinity();
+    int min_c = -1; // argmax_c dist(r, c)
+    for (int c = 0; c < w; ++c) {
+      double dist = dist_lut[r * w + c];
+      if (dist >= min_dist) {continue;}
+      if (group2_to[c] >= 0) {
+        double dist_rival = dist_lut[group2_to[c] * w + c];
+        if (dist >= dist_rival) {continue;}
+      }
+      min_dist = dist;
+      min_c = c;
+    }
+    // If such partner can not be found,
+    // there is no hope for this candidate to match anymore.
+    // So we simply kick it out.
+    if (min_c < 0 || min_dist > threshold) {
+      pool.pop_back();
+      continue;
+    }
+    
+    int r_rival = group2_to[min_c];
+    group1_to[r] = min_c;
+    group2_to[min_c] = r;
+    // If the partner already has a match and will turn to this new candidate
+    if (r_rival >= 0) {
+      group1_to[r_rival] = -1;
+      pool.back() = r_rival;
+    } else {
+      ++cur_matches;
+      pool.pop_back();
+    }
+  }
+  return group1_to;
+}
+
 Feature GenerateFeature(Coords pos, const StarList &star_list,
                         double max_radius) {
   auto w = RES_ANGLE;

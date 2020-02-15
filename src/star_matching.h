@@ -7,9 +7,16 @@ namespace lastro {
 
 const int RES_ANGLE = 60;
 const int RES_LENGTH = 20;
+const int RES_TOTAL = RES_ANGLE * RES_LENGTH;
 
 // 2D Feature representing the pattern of the stars in a local region
-typedef std::array<double, RES_ANGLE * RES_LENGTH> Feature;
+typedef std::array<double, RES_TOTAL> Feature;
+
+double Distance(const Feature &f1, const Feature &f2);
+
+std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
+                                 const std::vector<Feature> &group2,
+                                 double threshold = 1.0);
 
 Feature GenerateFeature(Coords pos, const StarList &star_list,
                         double max_radius);
