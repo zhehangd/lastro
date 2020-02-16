@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <fmt/format.h>
 #include <glog/logging.h>
 #include <opencv2/opencv.hpp>
 
@@ -112,6 +113,10 @@ struct DrawStarListConfig {
   
   // Radius of circles around stars
   double circle_radius;
+  
+  int num_stars;
+  
+  bool show_text;
 };
 
 void DrawStarListMain(const DrawStarListConfig &cfg) {
@@ -122,9 +127,18 @@ void DrawStarListMain(const DrawStarListConfig &cfg) {
   StarList star_list;
   LoadStarList(cfg.star_list_file, star_list);
   
-  for (const auto &star : star_list) {
-    cv::circle(image, star.pos.cvPoint(), cfg.circle_radius,
-      cv::Scalar(0, 255, 0));
+  cv::Scalar color(0, 255, 0);
+  for (std::size_t i = 0; i < star_list.size(); ++i) {
+    const auto &star = star_list[i];
+    cv::Point pt = star.pos.cvPoint();
+    cv::circle(image, pt, cfg.circle_radius, color);
+    if (cfg.show_text > 0) {
+      cv::putText(image, fmt::format("{}", i), pt,
+                  cv::FONT_HERSHEY_SIMPLEX, 1, color);
+    }
+    if (cfg.num_stars > 0) {
+      if (static_cast<int>(i) == cfg.num_stars) {break;}
+    }
   }
   
   std::string out_filename;
@@ -197,8 +211,14 @@ void RegisterDrawStarList(CLI::App &main_app) {
   app.add_option("-r,--circle-radius", cfg->circle_radius,
     "Radius of star circles")->default_val(5);
     
+  app.add_option("-n,--num-stars", cfg->num_stars,
+    "Show the brightest n stars")->default_val(0);
+    
   app.add_option("-o,--output", cfg->output_image_file,
     "Output file for the generated image.");
+  
+  app.add_flag("-t,--show-text", cfg->show_text,
+    "Draw star ids.");
   
   auto callback = [cfg]() {
     DrawStarListMain(*cfg);

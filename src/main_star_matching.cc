@@ -25,6 +25,13 @@ void MakeFeatureList(const StarList &star_list, int num_ref_stars, int win_radiu
   }
 }
 
+cv::Mat EstimateAffineMatrix(cv::Mat from, cv::Mat to) {
+  cv::Mat T;
+  cv::solve(to, from, T, cv::DECOMP_NORMAL);
+  T = T.t()(cv::Rect(0, 0, 3, 2));
+  return T;
+}
+
 void StarMactchingDev(void) {
   
   cv::Mat image1 = cv::imread("data/IMG_4513_8b.tif");
@@ -37,7 +44,7 @@ void StarMactchingDev(void) {
   StarList star_list2;
   LoadStarList("data/IMG_4533_starlist.txt", star_list2);
   
-  std::vector<MatchPoint> mpts = MatchStar(star_list1, star_list2);
+  std::vector<MatchPoint> mpts = MatchStar(star_list1, star_list2, 7.0);
   
   int x1 = 0, y1 = 0;
   int x2 = image1.cols, y2 = 0;
@@ -54,6 +61,21 @@ void StarMactchingDev(void) {
   }
   
   cv::imwrite("canvas.jpg", canvas);
+  
+  cv::Mat mfrom(mpts.size(), 3, CV_64F);
+  cv::Mat mto(mpts.size(), 3, CV_64F);
+  for (std::size_t i = 0; i < mpts.size(); ++i) {
+    mto.at<double>(i, 0) = mpts[i].a.x;
+    mto.at<double>(i, 1) = mpts[i].a.y;
+    mto.at<double>(i, 2) = 1.0;
+    mfrom.at<double>(i, 0) = mpts[i].b.x;
+    mfrom.at<double>(i, 1) = mpts[i].b.y;
+    mfrom.at<double>(i, 2) = 1.0;
+  }
+  cv::Mat T = EstimateAffineMatrix(mfrom, mto);
+  cv::Mat dst;
+  cv::warpAffine(image2, dst, T, image2.size(), cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
+  cv::imwrite("out.tif", dst);
 }
  
 void RegisterStarMactchingDev(CLI::App &main_app) {

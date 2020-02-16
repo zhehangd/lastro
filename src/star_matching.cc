@@ -1,5 +1,8 @@
 #include "star_matching.h"
 
+#include <glog/logging.h>
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -7,13 +10,13 @@ namespace lastro {
 
 double Distance(const Feature &f1, const Feature &f2) {
   double dist = 0;
-  double sum1 = 0, sum2 = 0;
-  for (auto v : f1) {sum1 += v;}
-  for (auto v : f2) {sum2 += v;}
-  double den = sum1 + sum2;
-  if (den == 0) {return 1;}
+  //double sum1 = 0, sum2 = 0;
+  //for (auto v : f1) {sum1 += v;}
+  //for (auto v : f2) {sum2 += v;}
+  //double den = sum1 + sum2;
+  //if (den == 0) {return 1;}
   for (int i = 0; i < RES_TOTAL; ++i) {dist += (double)std::abs(f1[i] - f2[i]);}
-  dist /= sum1 + sum2; // is this reasonable?
+  //dist /= sum1 + sum2; // is this reasonable?
   return dist;
 }
   
@@ -23,14 +26,16 @@ std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
   int h = group1.size();
   int w = group2.size();
   std::vector<double> dist_lut(w * h);
-  for (int r = 0; r < h; ++r)
-    for (int c = 0; c < w; ++c)
+  for (int r = 0; r < h; ++r) {
+    for (int c = 0; c < w; ++c) {
       dist_lut[r * w + c] = Distance(group1[r], group2[c]);
+    }
+  }
   
-  //for (int r = 0; r < h; ++r) {
-  //  auto it = dist_lut.begin() + r * w;
-  //  LOG(INFO) << fmt::format("{:<4.2}", fmt::join(it, it + w, " , "));
-  //}
+  for (int r = 0; r < h; ++r) {
+    auto it = dist_lut.begin() + r * w;
+    //LOG(INFO) << fmt::format("{:<4}", fmt::join(it, it + w, ", "));
+  }
   std::vector<int> pool; // elements from group1 that have no match yet
   for (int r = 0; r < h; ++r) {pool.push_back(r);}
   std::vector<int> group1_to(h, -1);
@@ -38,6 +43,7 @@ std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
   int num_matches = std::min(w, h);
   int cur_matches = 0;
   while (num_matches != cur_matches) {
+    //LOG(ERROR) << "MATCH: " << num_matches;
     // Select one unpaired candidate
     int r = pool.back();
     // Find the best unpaired partner 
@@ -56,8 +62,9 @@ std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
     // If such partner can not be found,
     // there is no hope for this candidate to match anymore.
     // So we simply kick it out.
-    if (min_c < 0 || min_dist > threshold) {
+    if (min_c < 0 || (threshold > 0 && min_dist > threshold)) {
       pool.pop_back();
+      ++cur_matches;
       continue;
     }
     
@@ -66,10 +73,12 @@ std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
     group2_to[min_c] = r;
     // If the partner already has a match and will turn to this new candidate
     if (r_rival >= 0) {
+      //LOG(ERROR) << pool.size() << " " << cur_matches << "/" << num_matches << " " << r << " -> " << r_rival;
       group1_to[r_rival] = -1;
       pool.back() = r_rival;
     } else {
       ++cur_matches;
+      //LOG(ERROR) << pool.size() << " " << cur_matches << "/" << num_matches << " " << r;
       pool.pop_back();
     }
   }
@@ -126,7 +135,7 @@ Feature GenerateFeature(Coords pos, const StarList &star_list,
     int r1 = (r0 + 1) % h;
     int c1 = (c0 + 1) % w;
     
-    double val = 255.0;
+    double val = 1.0;
     double val00 = val * (1 - angle_f) * (1 - dist_f);
     double val01 = val * angle_f * (1 - dist_f);
     double val10 = val * (1 - angle_f) * dist_f;
@@ -157,7 +166,8 @@ std::vector<Descriptor> MakeDescriptors(const StarList &star_list) {
 }
 
 std::vector<MatchPoint> MatchStar(const StarList &ref_star_list,
-                                  const StarList &tar_star_list) {
+                                  const StarList &tar_star_list,
+                                  double threshold) {
   std::vector<MatchPoint> match_list;
   auto ref_descr_list = MakeDescriptors(ref_star_list);
   auto tar_descr_list = MakeDescriptors(tar_star_list);
@@ -165,13 +175,14 @@ std::vector<MatchPoint> MatchStar(const StarList &ref_star_list,
   for (auto &dscr : ref_descr_list) {ref_feat_list.push_back(dscr.feat);};
   std::vector<Feature> tar_feat_list;
   for (auto &dscr : tar_descr_list) {tar_feat_list.push_back(dscr.feat);};
-  std::vector<int> id_map = BruteForceMatch(ref_feat_list, tar_feat_list);
+  std::vector<int> id_map = BruteForceMatch(
+    ref_feat_list, tar_feat_list, threshold);
   for (std::size_t i = 0; i < id_map.size(); ++i) {
     if (id_map[i] >= 0) {
       match_list.emplace_back();
       auto &pair = match_list.back();
       pair.a = ref_descr_list[i].pos;
-      pair.b = tar_descr_list[i].pos;
+      pair.b = tar_descr_list[id_map[i]].pos;
     }
   }
   return match_list;

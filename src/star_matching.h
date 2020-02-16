@@ -29,11 +29,12 @@ struct StarPatternFeature {
 };
 
 std::vector<MatchPoint> MatchStar(const StarList &ref_star_list,
-                                  const StarList &tar_star_list);
+                                  const StarList &tar_star_list,
+                                  double threshold = 10.0);
 
 std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
                                  const std::vector<Feature> &group2,
-                                 double threshold = 1.0);
+                                 double threshold = 0);
 
 Feature GenerateFeature(Coords pos, const StarList &star_list,
                         double max_radius);
