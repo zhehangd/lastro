@@ -1,6 +1,7 @@
 #ifndef LASTRO_STAR_MATCHING_H_
 #define LASTRO_STAR_MATCHING_H_
 
+#include "core.h"
 #include "star_detection.h"
 
 namespace lastro {
@@ -13,6 +14,22 @@ const int RES_TOTAL = RES_ANGLE * RES_LENGTH;
 typedef std::array<double, RES_TOTAL> Feature;
 
 double Distance(const Feature &f1, const Feature &f2);
+
+struct MatchPoint {
+  Coords a;
+  Coords b;
+};
+
+struct Descriptor {
+  Coords pos;
+  Feature feat;
+};
+
+struct StarPatternFeature {
+};
+
+std::vector<MatchPoint> MatchStar(const StarList &ref_star_list,
+                                  const StarList &tar_star_list);
 
 std::vector<int> BruteForceMatch(const std::vector<Feature> &group1,
                                  const std::vector<Feature> &group2,

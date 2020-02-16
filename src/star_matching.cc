@@ -140,6 +140,43 @@ Feature GenerateFeature(Coords pos, const StarList &star_list,
   return feat;
 }
 
+std::vector<Descriptor> MakeDescriptors(const StarList &star_list) {
+  StarList keystar_list;
+  std::vector<Descriptor> dscr_list;
+  FilterStarsByBrightness(star_list, keystar_list, 20);
+  for (std::size_t i = 0; i < keystar_list.size(); ++i) {
+    const auto &keystar = keystar_list[i];
+    StarList nearby_star_list;
+    FilterStarsByDistance(star_list, keystar.pos, nearby_star_list, 200);
+    dscr_list.emplace_back();
+    auto &descr = dscr_list.back();
+    descr.pos = keystar.pos;
+    descr.feat = GenerateFeature(keystar.pos, nearby_star_list, 200);
+  }
+  return dscr_list;
+}
+
+std::vector<MatchPoint> MatchStar(const StarList &ref_star_list,
+                                  const StarList &tar_star_list) {
+  std::vector<MatchPoint> match_list;
+  auto ref_descr_list = MakeDescriptors(ref_star_list);
+  auto tar_descr_list = MakeDescriptors(tar_star_list);
+  std::vector<Feature> ref_feat_list;
+  for (auto &dscr : ref_descr_list) {ref_feat_list.push_back(dscr.feat);};
+  std::vector<Feature> tar_feat_list;
+  for (auto &dscr : tar_descr_list) {tar_feat_list.push_back(dscr.feat);};
+  std::vector<int> id_map = BruteForceMatch(ref_feat_list, tar_feat_list);
+  for (std::size_t i = 0; i < id_map.size(); ++i) {
+    if (id_map[i] >= 0) {
+      match_list.emplace_back();
+      auto &pair = match_list.back();
+      pair.a = ref_descr_list[i].pos;
+      pair.b = tar_descr_list[i].pos;
+    }
+  }
+  return match_list;
+}
+
 void DrawStarPattern(cv::Mat &canvas, int x, int y, const StarList &stars,
                      cv::Scalar color) {
   for (const auto &star : stars) {
