@@ -37,6 +37,7 @@ void MakeStarMaskMain(const MakeStarMaskConfig &cfg) {
   std::string filename = cfg.exposure_image_file;
   LOG(INFO) << "Reading exposure image " << filename;
   cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
+  auto depth = image.depth();
   
   if (image.channels() > 1) {
     LOG(INFO) << "The image has more than one channel, use the first one";
@@ -54,7 +55,7 @@ void MakeStarMaskMain(const MakeStarMaskConfig &cfg) {
     LOG(INFO) << "Generating the image after the high-pass filter"
       "instead of the binary mask";
     image = CreateStarMask(image, -1);
-    image.convertTo(image, image.depth(), 1, cfg.offset);
+    image.convertTo(image, depth, 1, cfg.offset);
   } else {
     LOG(INFO) << "Generating the star mask with threshold " << cfg.threshold;
     image = CreateStarMask(image, cfg.threshold);
