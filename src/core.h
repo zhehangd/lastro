@@ -22,6 +22,10 @@ struct Coords {
 
 double MaxValue(int depth);
 
+cv::Mat ReadImage(std::string filename);
+
+void SaveImage(std::string filename, cv::Mat image);
+
 }
 
 #endif

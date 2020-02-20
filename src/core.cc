@@ -15,4 +15,15 @@ double MaxValue(int depth) {
   }
 }
 
+cv::Mat ReadImage(std::string filename) {
+  LOG(INFO) << "Reading image " << filename;
+  cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
+  CHECK(image.data != nullptr) << "Cannot open " << filename;
+  return image;
+}
+
+void SaveImage(std::string filename, cv::Mat image) {
+  cv::imwrite(filename, image);
+}
+
 }
