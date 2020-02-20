@@ -9,6 +9,7 @@
 
 #include "main_star_detection.h"
 #include "main_star_matching.h"
+#include "main_math_ops.h"
 
 using namespace lastro;
 
@@ -19,6 +20,7 @@ int main(int argc, char **argv) {
   CLI::App app {"Landscape astrophotography tools"};
   RegisterStarDetectionSubcommands(app);
   RegisterStarMatchingSubcommands(app);
+  RegisterMathOpsSubcommands(app);
   
   try {
     app.parse(argc, argv);

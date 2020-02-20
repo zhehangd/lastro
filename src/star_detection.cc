@@ -17,6 +17,10 @@ namespace {
 
 }
 
+void HighpassFilter(cv::Mat src, cv::Mat &dst, int level) {
+  DWT2HighPass(src, dst, level);
+}
+
 cv::Mat CreateStarMask(cv::Mat image, double thres) {
   CHECK_EQ(image.channels(), 1);
   CHECK_EQ(image.dims, 2);

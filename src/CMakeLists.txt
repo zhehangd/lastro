@@ -22,6 +22,7 @@ add_executable(lastro
   main.cc
   main_star_detection.cc
   main_star_matching.cc
+  main_math_ops.cc
   utilities.cc
   $<TARGET_OBJECTS:lastro_objs>
 )

@@ -4,7 +4,8 @@
 
 #include "wavelib/wavelib.h"
 
-void DWT2HighPass(cv::Mat src, cv::Mat &dst, int level) {
+namespace {
+void DWT2HighPassGray(cv::Mat src, cv::Mat &dst, int level) {
   int rows = src.rows;
   int cols = src.cols;
   const char *name = "db2";
@@ -14,9 +15,10 @@ void DWT2HighPass(cv::Mat src, cv::Mat &dst, int level) {
   wt2_object wt = wt2_init(obj, "dwt", rows, cols, level);
   strcpy(wt->ext, ext);
   
-  // TODO Make sure src is continuous and double and is single channel image.
+  // TODO: current code does not support discontinuous dst layout
+  CHECK_EQ(src.channels(), 1);
+  src.convertTo(dst, CV_64F);
   
-  src.convertTo(dst, CV_64FC1);
   double *dst_p = reinterpret_cast<double*>(dst.data);
   
   double *wavecoeffs = dwt2(wt, dst_p);
@@ -35,3 +37,24 @@ void DWT2HighPass(cv::Mat src, cv::Mat &dst, int level) {
   wave_free(obj);
   wt2_free(wt);
 }
+}
+
+void DWT2HighPass(cv::Mat src, cv::Mat &dst, int level) {
+  int depth = src.depth();
+  int num_channels = src.channels();
+  cv::Mat cache;
+  src.convertTo(cache, CV_64F);
+  if (num_channels == 1) {
+    DWT2HighPassGray(cache, cache, level);
+  } else {
+    std::vector<cv::Mat> channels;
+    cv::split(cache, channels);
+    for (int k = 0; k < num_channels; ++k) {
+      DWT2HighPassGray(channels[k], channels[k], level);
+    }
+    cv::merge(channels, cache);
+  }
+  cache.convertTo(dst, depth);
+}
+
+

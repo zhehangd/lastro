@@ -20,6 +20,8 @@ struct Coords {
   double y = 0;
 };
 
+double MaxValue(int depth);
+
 }
 
 #endif

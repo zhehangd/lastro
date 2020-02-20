@@ -21,6 +21,8 @@ struct BasicStar {
 
 typedef std::vector<BasicStar> StarList;
 
+void HighpassFilter(cv::Mat src, cv::Mat &dst, int level = 7);
+
 // Generate a binary mask that encircles stars in the image.
 // Input image should has only one channel.
 // If thres <= 0, returns the high-pass image before thresholding.

@@ -228,12 +228,59 @@ void RegisterDrawStarList(CLI::App &main_app) {
   app.parse_complete_callback(callback);
 }
 
+struct HighpassConfig {
+  
+  // Input image
+  std::string input_image_file;
+  
+  // Output image
+  std::string output_image_file;
+  
+  int level = 7;
+  
+  // Constant value added to all pixels.
+  // It has effect only if you choose save the raw image.
+  double offset = 0;
+};
+
+void HighpassMain(const HighpassConfig &cfg) {
+  std::string filename = cfg.input_image_file;
+  LOG(INFO) << "Reading image " << filename;
+  cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
+  LOG(INFO) << cfg.level;
+  HighpassFilter(image, image, cfg.level);
+  std::string out_filename = AutoFilename(
+    cfg.output_image_file, filename, "_hp.tif");
+  cv::imwrite(out_filename, image);
+}
+
+void RegisterHighpass(CLI::App &main_app) {
+  auto cfg = std::make_shared<HighpassConfig>();
+  CLI::App &app = *main_app.add_subcommand("highpass");
+  
+  app.add_option("IMAGE", cfg->input_image_file,
+    "Input image to be processed by a high-pass filter")->required();
+    
+  app.add_option("-o,--output", cfg->output_image_file,
+    "Output image file.");
+  
+  app.add_option("-n,--level", cfg->level,
+    "Wavelet level");
+  
+  auto callback = [cfg]() {
+    HighpassMain(*cfg);
+  };
+  
+  app.parse_complete_callback(callback);
+}
+
 } // namespace {}
 
 void RegisterStarDetectionSubcommands(CLI::App &main_app) {
   RegisterMakeStarMask(main_app);
   RegisterMakeStarList(main_app);
   RegisterDrawStarList(main_app);
+  RegisterHighpass(main_app);
 }
 
 }

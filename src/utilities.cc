@@ -38,4 +38,12 @@ std::string GenerateFilename(const std::string &path, const std::string &dir,
   return ss.str();
 }
 
+std::string AutoFilename(std::string src, std::string prototype, std::string suffix) {
+  if (src.empty()) {
+    return GenerateFilename(prototype, ".", suffix);
+  } else {
+    return src;
+  }
+}
+
 }
