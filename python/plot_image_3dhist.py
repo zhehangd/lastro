@@ -18,34 +18,47 @@ def parse_coords(arg):
   return coords
 
 def plot_image(filename, image, x0=0, y0=0):
-  x = np.arange(x0, x0+image.shape[1])
-  y = np.arange(y0, y0+image.shape[0])
-  xmin = x0
-  xmax = x0+image.shape[1]
-  ymin = y0
-  ymax = y0+image.shape[0]
-  zmin = np.amin(image)
-  x2, y2 = np.meshgrid(x, y)
+  
+  
+  data_lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(np.float32)
+  data_bgr = image.reshape(-1, 3).astype(np.float32)
+  
+  colors = data_bgr.astype(np.float32) / 255.0
+  colors = np.flip(colors, -1)
+  
+  xs = (data_lab[:, 1] - 128) / 128.0
+  ys = (data_lab[:, 2] - 128) / 128.0
+  zs = data_lab[:, 0] / 255.0
+  xmin = np.amin(xs)
+  ymin = np.amin(ys)
+  zmin = np.amin(zs)
+  xmax = np.amax(xs)
+  ymax = np.amax(ys)
+  zmax = np.amax(zs)
   
   fig = plt.figure(figsize=(19.2, 9.6), tight_layout=True)
-  for r in range(2):
-    for c in range(3):
-      z2 = image[:, :, 2 - c]
-      ax = fig.add_subplot(2, 3, r * 3 + c + 1, projection='3d')
-      ax.invert_yaxis()
-      
-      ax.plot_surface(x2, y2, z2, color='rgb'[c])
-      cset = ax.contourf(x2, y2, z2, zdir='z', offset=zmin, cmap=cm.PuOr)
-      cset = ax.contourf(x2, y2, z2, zdir='x', offset=xmax, cmap=cm.PuOr)
-      cset = ax.contourf(x2, y2, z2, zdir='y', offset=ymin, cmap=cm.PuOr)
-      ax.set_xlabel('col')
-      ax.set_ylabel('row')
-      ax.set_xlim(x[0], x[-1])
-      ax.set_ylim(y[0], y[-1])
-      azim = 45 + (0 if r == 0 else 90)
-      ax.view_init(elev=30., azim=azim)
+  for i in range(6):
+    azim = np.linspace(0, 180, 6)[i]
+    ax = fig.add_subplot(2, 3, i + 1, projection='3d')
+    ax.scatter(xs, ys, zs, color=colors)
+    ax.set_xlabel('a')
+    ax.set_ylabel('b')
+    ax.set_zlabel('L')
+    
+    zs_xz = ymin if azim >= 0 and azim <= 180 else ymax
+    zs_yz = xmin if azim >= -90 and azim <= 90 else xmax
+    zs_xy = zmin
+    
+    alpha = 0.05
+    ax.plot(xs, zs, 'r+', zdir='y', zs=zs_xz, alpha=alpha)
+    ax.plot(ys, zs, 'g+', zdir='x', zs=zs_yz, alpha=alpha)
+    ax.plot(xs, ys, 'k+', zdir='z', zs=zs_xy, alpha=alpha)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_zlim(zmin, zmax)
+    ax.view_init(elev=30., azim=azim)
   fig.savefig(filename, dpi='figure')
-  #plt.show()
+  plt.show()
 
 def crop_window(image, center, wsize):
   h, w = image.shape[:2]
@@ -84,7 +97,7 @@ if __name__ == '__main__':
   parser.add_argument('image', 
       help='Image to plot.')
 
-  parser.add_argument('--maxsize', type=int, default=600,
+  parser.add_argument('--maxsize', type=int, default=50,
       help='Shrink large image so the longer side has this size')
 
   parser.add_argument('--wsize', type=int, default=32,
